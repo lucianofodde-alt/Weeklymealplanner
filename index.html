@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Meal Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5efe7; --surface:#fffaf4; --surface-2:#f0e6d9; --line:#e4d6c4; --line-soft:#eee3d5;
+  --text:#2b1f17; --muted:#8b7563; --accent:#6f4e37; --accent-2:#a47551; --accent-soft:#eadbc8;
+  --done:#b9a691; --shadow:0 1px 2px rgba(60,40,25,.05),0 12px 32px -12px rgba(60,40,25,.18);
+  --today:#f3e4cf;
+  --c1:#6f4e37; --c2:#a47551; --c3:#c8a27c; --c4:#8a9a7b; --c5:#b5835a;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#14100c; --surface:#1d1712; --surface-2:#271f18; --line:#352a21; --line-soft:#2b221b;
+    --text:#f1e6d8; --muted:#a8927d; --accent:#d2ad86; --accent-2:#c8a27c; --accent-soft:#33271e;
+    --done:#6d5d4e; --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px -16px rgba(0,0,0,.6);
+    --today:#2c2219; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14100c; --surface:#1d1712; --surface-2:#271f18; --line:#352a21; --line-soft:#2b221b;
+  --text:#f1e6d8; --muted:#a8927d; --accent:#d2ad86; --accent-2:#c8a27c; --accent-soft:#33271e;
+  --done:#6d5d4e; --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px -16px rgba(0,0,0,.6);
+  --today:#2c2219; color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text)}
+body{font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+.wrap{max-width:1280px;margin:0 auto;padding:40px 24px 64px}
+
+/* Header */
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:32px}
+.eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:500}
+h1{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:clamp(36px,5vw,54px);letter-spacing:-.01em;line-height:1;margin-top:6px}
+h1 em{font-style:italic;font-weight:500;color:var(--accent)}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.week-nav{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px}
+.week-nav span{padding:0 10px;font-weight:500;font-size:13px;min-width:150px;text-align:center}
+.icon-btn{width:34px;height:34px;border-radius:999px;display:grid;place-items:center;color:var(--muted);transition:.2s}
+.icon-btn:hover{background:var(--surface-2);color:var(--text)}
+.icon-btn svg{width:17px;height:17px}
+.pill-btn{height:42px;padding:0 16px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:8px;transition:.2s}
+.pill-btn:hover{border-color:var(--accent-2)}
+.pill-btn svg{width:16px;height:16px}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 24px 16px;border-bottom:1px solid var(--line-soft)}
+.card-head h2{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:26px;line-height:1}
+.card-head .meta{font-size:12px;color:var(--muted)}
+
+/* Planner */
+.planner{margin-bottom:24px}
+.grid{display:grid;grid-template-columns:110px repeat(4,1fr)}
+.grid .th{padding:12px 14px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.grid .th:not(:first-child){border-left:1px solid var(--line-soft)}
+.day{padding:14px 16px;display:flex;flex-direction:column;justify-content:center;border-bottom:1px solid var(--line-soft);position:relative}
+.day b{font-family:"Cormorant Garamond",serif;font-size:21px;font-weight:600;line-height:1}
+.day small{color:var(--muted);font-size:12px;margin-top:3px}
+.cell{border-bottom:1px solid var(--line-soft);border-left:1px solid var(--line-soft);position:relative}
+.cell textarea{width:100%;height:100%;min-height:76px;resize:none;border:none;background:transparent;padding:14px;font-size:13.5px;outline:none;transition:background .2s}
+.cell textarea::placeholder{color:transparent}
+.cell:hover textarea::placeholder,.cell textarea:focus::placeholder{color:var(--done)}
+.cell textarea:focus{background:var(--accent-soft)}
+.row.today > *{background:var(--today)}
+.row.today .day::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
+.row.today .day small{color:var(--accent);font-weight:500}
+.row{display:contents}
+.row:last-child > *{border-bottom:none}
+
+/* Lists */
+.lists{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.list-head,.item{display:grid;align-items:center;gap:8px;padding:0 16px}
+.inv .list-head,.inv .item{grid-template-columns:1fr 64px 128px 64px}
+.shop .list-head,.shop .item{grid-template-columns:28px 1fr 64px 128px 32px}
+.list-head{padding-top:10px;padding-bottom:10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface-2)}
+.item{min-height:50px;border-bottom:1px solid var(--line-soft);animation:in .25s ease}
+@keyframes in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.item input[type=text],.item input[type=number]{width:100%;border:none;background:transparent;padding:8px 6px;border-radius:8px;outline:none;transition:background .2s}
+.item input:focus{background:var(--accent-soft)}
+.item input[type=number]{text-align:center;-moz-appearance:textfield}
+.item input::-webkit-inner-spin-button{-webkit-appearance:none}
+.chip{appearance:none;-webkit-appearance:none;border:none;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:500;color:#fff;cursor:pointer;text-align:center;outline:none;width:100%}
+.chip option{color:var(--text);background:var(--surface)}
+.actions{display:flex;justify-content:flex-end;gap:2px;opacity:.35;transition:opacity .2s}
+.item:hover .actions,.item:focus-within .actions{opacity:1}
+.mini{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted);transition:.2s}
+.mini:hover{background:var(--surface-2);color:var(--accent)}
+.mini.del:hover{color:#b4553f}
+.mini svg{width:15px;height:15px}
+.low{display:inline-block;width:6px;height:6px;border-radius:50%;background:#c46b4b;margin-left:4px;vertical-align:middle}
+.check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line);display:grid;place-items:center;transition:.2s;background:var(--surface)}
+.check svg{width:12px;height:12px;stroke:#fff;opacity:0;transition:.2s}
+.item.done .check{background:var(--accent);border-color:var(--accent)}
+.item.done .check svg{opacity:1}
+.item.done input[type=text],.item.done input[type=number]{color:var(--done);text-decoration:line-through}
+.item.done .chip{opacity:.45}
+.add{display:flex;align-items:center;gap:8px;width:100%;padding:14px 22px;color:var(--muted);font-size:13px;transition:.2s}
+.add:hover{color:var(--accent);background:var(--surface-2)}
+.add svg{width:15px;height:15px}
+.empty{padding:28px 24px;text-align:center;color:var(--muted);font-family:"Cormorant Garamond",serif;font-style:italic;font-size:18px}
+.progress{height:3px;background:var(--line-soft)}
+.progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .4s ease}
+.foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line-soft);flex-wrap:wrap}
+.text-btn{font-size:12px;font-weight:500;color:var(--muted);padding:6px 10px;border-radius:8px;transition:.2s}
+.text-btn:hover{color:var(--accent);background:var(--surface-2)}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.3s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;letter-spacing:.04em}
+
+/* Ideas */
+.ideas{margin-bottom:24px}
+.ideas-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.icol{border-left:1px solid var(--line-soft);display:flex;flex-direction:column;min-width:0}
+.icol:first-child{border-left:none}
+.icol h3{padding:12px 16px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface-2);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.icol h3 span{letter-spacing:0;font-weight:500;color:var(--done)}
+.idea{display:flex;align-items:center;gap:2px;padding:4px 8px 4px 4px;border-bottom:1px solid var(--line-soft);animation:in .25s ease;transition:background .2s}
+.idea .grip{color:var(--done);width:18px;height:28px;flex:none;display:grid;place-items:center;cursor:grab;border-radius:6px}
+.idea .grip:hover{color:var(--accent);background:var(--surface-2)}
+.idea .grip svg{width:12px;height:12px}
+.idea input{flex:1;min-width:0;border:none;background:transparent;padding:8px 6px;border-radius:8px;outline:none;font-size:13.5px;transition:background .2s}
+.idea input:focus{background:var(--accent-soft)}
+.idea .actions{opacity:.55}
+.idea:hover .actions,.idea:focus-within .actions{opacity:1}
+.idea.copied{background:var(--accent-soft)}
+.idea.copied .mini.copy{color:var(--accent)}
+.empty-s{padding:18px 16px;color:var(--muted);font-size:13px;font-family:"Cormorant Garamond",serif;font-style:italic;text-align:center}
+.idea-add{display:flex;padding:8px 10px 10px;margin-top:auto}
+.idea-add input{flex:1;min-width:0;border:1px dashed var(--line);background:transparent;border-radius:10px;padding:8px 10px;outline:none;font-size:13px;transition:.2s}
+.idea-add input:focus{border-style:solid;border-color:var(--accent-2);background:var(--surface)}
+
+/* Paste & drop */
+body.pasting .cell textarea{cursor:copy}
+body.pasting .cell:hover textarea,.cell.drop textarea{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent-2)}
+.cell.flash textarea{animation:flash .7s ease}
+@keyframes flash{0%{background:var(--accent-2)}100%{background:transparent}}
+.pastebar{position:fixed;left:50%;bottom:24px;transform:translate(-50%,24px);display:flex;align-items:center;gap:12px;background:var(--text);color:var(--bg);padding:8px 8px 8px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.3s;max-width:calc(100% - 32px);box-shadow:var(--shadow);z-index:10}
+.pastebar.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.pastebar .txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pastebar b{font-weight:600}
+.pastebar button{flex:none;background:var(--bg);color:var(--text);border-radius:999px;padding:7px 16px;font-size:12px;font-weight:600}
+body.pasting .toast{bottom:84px}
+
+/* Responsive */
+@media (max-width:960px){
+  .lists{grid-template-columns:1fr}
+  .ideas-grid{grid-template-columns:1fr 1fr}
+  .icol:nth-child(3){border-left:none}
+  .icol:nth-child(n+3){border-top:1px solid var(--line)}
+}
+@media (max-width:560px){
+  .ideas-grid{grid-template-columns:1fr}
+  .icol{border-left:none}
+  .icol+.icol{border-top:1px solid var(--line)}
+}
+@media (max-width:760px){
+  .wrap{padding:28px 16px 48px}
+  .grid{grid-template-columns:1fr}
+  .grid .th{display:none}
+  .row{display:block;border-bottom:1px solid var(--line)}
+  .row > *{border:none!important}
+  .day{flex-direction:row;align-items:baseline;gap:8px;padding:16px 16px 6px}
+  .cell{display:grid;grid-template-columns:86px 1fr;align-items:start}
+  .cell::before{content:attr(data-label);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:16px 0 0 16px;font-weight:600}
+  .cell textarea{min-height:48px}
+  .week-nav span{min-width:120px}
+  .inv .list-head,.inv .item{grid-template-columns:1fr 46px 104px 60px}
+  .shop .list-head,.shop .item{grid-template-columns:24px 1fr 46px 104px 28px}
+  .list-head,.item{padding:0 10px;gap:6px}
+}
+@media print{
+  body{background:#fff;color:#000}
+  .controls,.add,.foot,.actions,.toast,footer,.ideas,.pastebar{display:none!important}
+  .card{box-shadow:none;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Planificador semanal</div>
+      <h1>Meal <em>Planner</em></h1>
+    </div>
+    <div class="controls">
+      <div class="week-nav">
+        <button class="icon-btn" id="prev" aria-label="Semana anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <span id="weekLabel"></span>
+        <button class="icon-btn" id="next" aria-label="Semana siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+      <button class="pill-btn" id="todayBtn">Hoy</button>
+      <button class="pill-btn" id="printBtn" aria-label="Imprimir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir</button>
+      <button class="pill-btn" id="themeBtn" aria-label="Cambiar tema"><svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></svg></button>
+    </div>
+  </header>
+
+  <section class="card planner">
+    <div class="card-head">
+      <h2>Menú de la semana</h2>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="meta" id="planCount"></span>
+        <button class="text-btn" id="clearWeek">Limpiar semana</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="card ideas">
+    <div class="card-head">
+      <h2>Ideas</h2>
+      <span class="meta">Copia una idea y toca la comida donde quieras pegarla, o arrástrala desde ⋮⋮</span>
+    </div>
+    <div class="ideas-grid" id="ideasGrid"></div>
+  </section>
+
+  <div class="lists">
+    <section class="card inv">
+      <div class="card-head"><h2>Inventario</h2><span class="meta" id="invCount"></span></div>
+      <div class="list-head"><span>Ingrediente</span><span style="text-align:center">Cant.</span><span style="text-align:center">Ubicación</span><span></span></div>
+      <div id="invList"></div>
+      <button class="add" id="addInv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Agregar ingrediente</button>
+    </section>
+
+    <section class="card shop">
+      <div class="card-head"><h2>Lista de compras</h2><span class="meta" id="shopCount"></span></div>
+      <div class="progress"><i id="bar"></i></div>
+      <div class="list-head"><span></span><span>Ingrediente</span><span style="text-align:center">Cant.</span><span style="text-align:center">Dónde</span><span></span></div>
+      <div id="shopList"></div>
+      <button class="add" id="addShop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Agregar a la lista</button>
+      <div class="foot">
+        <button class="text-btn" id="toInventory">Pasar comprados al inventario</button>
+        <button class="text-btn" id="clearDone">Borrar comprados</button>
+      </div>
+    </section>
+  </div>
+  <footer>Se guarda automáticamente en este navegador</footer>
+</div>
+<div class="toast" id="toast"></div>
+<div class="pastebar" id="pastebar"><span class="txt">Pegando <b id="pasteText"></b> · toca una comida</span><button id="pasteDone">Listo</button></div>
+
+<script>
+const DAYS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const MEALS=[['breakfast','Desayuno'],['lunch','Almuerzo'],['dinner','Cena'],['snacks','Snacks']];
+const LOCS={'Refrigerador':'var(--c1)','Congelador':'var(--c4)','Alacena':'var(--c2)','Despensa':'var(--c5)','Frutero':'var(--c3)'};
+const STORES={'Supermercado':'var(--c1)','Mercado':'var(--c4)','Verdulería':'var(--c3)','Carnicería':'var(--c5)','Panadería':'var(--c2)','Online':'#7d6b5d'};
+const KEY='coffeeMealPlanner.v1';
+const $=id=>document.getElementById(id);
+const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let state={weeks:{},inventory:[
+  {id:uid(),name:'Huevos',qty:12,loc:'Refrigerador'},
+  {id:uid(),name:'Helado',qty:1,loc:'Congelador'}],
+  shopping:[{id:uid(),name:'Café en grano',qty:1,store:'Supermercado',done:false}],theme:null,
+  ideas:[['breakfast','Avena con banana y canela'],['breakfast','Tostadas con huevo revuelto'],['breakfast','Yogur con granola y frutos rojos'],
+    ['lunch','Ensalada de pollo y quinoa'],['lunch','Arroz con verduras salteadas'],
+    ['dinner','Salmón con vegetales al horno'],['dinner','Tortilla de papa y ensalada'],
+    ['snacks','Fruta con mantequilla de maní'],['snacks','Café con tostada integral']].map(([cat,text])=>({id:uid(),cat,text}))};
+let clip=null,dragText=null;
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s)state=Object.assign(state,s)}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
+
+/* ---------- Week ---------- */
+function monday(d){const x=new Date(d);x.setHours(0,0,0,0);const w=(x.getDay()+6)%7;x.setDate(x.getDate()-w);return x}
+let cur=monday(new Date());
+const keyOf=d=>d.toISOString().slice(0,10);
+const fmt=(d,o)=>d.toLocaleDateString('es',o);
+
+function renderPlanner(){
+  const k=keyOf(cur);const wk=state.weeks[k]||{};
+  const end=new Date(cur);end.setDate(end.getDate()+6);
+  $('weekLabel').textContent=`${fmt(cur,{day:'numeric',month:'short'})} – ${fmt(end,{day:'numeric',month:'short'})}`;
+  const today=keyOf(new Date(new Date().setHours(0,0,0,0)));
+  let h='<div class="th"></div>'+MEALS.map(m=>`<div class="th">${m[1]}</div>`).join('');
+  let filled=0;
+  DAYS.forEach((name,i)=>{
+    const d=new Date(cur);d.setDate(d.getDate()+i);
+    const isToday=keyOf(d)===today;
+    h+=`<div class="row${isToday?' today':''}"><div class="day"><b>${name}</b><small>${isToday?'Hoy · ':''}${fmt(d,{day:'numeric',month:'long'})}</small></div>`;
+    MEALS.forEach(([m,label])=>{
+      const v=(wk[i]&&wk[i][m])||'';if(v.trim())filled++;
+      h+=`<div class="cell" data-label="${label}"><textarea data-d="${i}" data-m="${m}" placeholder="Agregar ${label.toLowerCase()}…" rows="2"${clip?' readonly':''}>${esc(v)}</textarea></div>`;
+    });
+    h+='</div>';
+  });
+  $('grid').innerHTML=h;
+  $('planCount').textContent=`${filled} de 28 comidas`;
+}
+function setCell(t){
+  const k=keyOf(cur);state.weeks[k]=state.weeks[k]||{};
+  const w=state.weeks[k];w[t.dataset.d]=w[t.dataset.d]||{};w[t.dataset.d][t.dataset.m]=t.value;
+  save();
+  let n=0;$('grid').querySelectorAll('textarea').forEach(x=>{if(x.value.trim())n++});
+  $('planCount').textContent=`${n} de 28 comidas`;
+}
+$('grid').addEventListener('input',e=>{if(e.target.tagName==='TEXTAREA')setCell(e.target)});
+$('prev').onclick=()=>{cur.setDate(cur.getDate()-7);renderPlanner()};
+$('next').onclick=()=>{cur.setDate(cur.getDate()+7);renderPlanner()};
+$('todayBtn').onclick=()=>{cur=monday(new Date());renderPlanner()};
+$('clearWeek').onclick=()=>{if(confirm('¿Borrar todas las comidas de esta semana?')){delete state.weeks[keyOf(cur)];save();renderPlanner();toast('Semana limpia')}};
+
+/* ---------- Lists ---------- */
+const opts=(map,sel)=>Object.keys(map).map(k=>`<option ${k===sel?'selected':''}>${k}</option>`).join('');
+const ic={
+  cart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.5 11h11L21 8H7"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  ok:'<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A1.5 1.5 0 013 13.5v-9A1.5 1.5 0 014.5 3h9A1.5 1.5 0 0115 4.5V5"/></svg>',
+  grip:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>'
+};
+
+/* ---------- Ideas ---------- */
+function renderIdeas(){
+  $('ideasGrid').innerHTML=MEALS.map(([m,label])=>{
+    const L=state.ideas.filter(i=>i.cat===m);
+    return `<div class="icol" data-cat="${m}"><h3>${label}<span>${L.length}</span></h3>
+      <div>${L.length?L.map(it=>`<div class="idea${clip&&clip.id===it.id?' copied':''}" data-id="${it.id}">
+        <span class="grip" draggable="true" title="Arrastrar a un día">${ic.grip}</span>
+        <input type="text" value="${esc(it.text)}" placeholder="Idea">
+        <div class="actions"><button class="mini copy" data-act="copy" title="Copiar">${ic.copy}</button><button class="mini del" data-act="del" title="Eliminar">${ic.x}</button></div>
+      </div>`).join(''):'<div class="empty-s">Sin ideas todavía</div>'}</div>
+      <form class="idea-add"><input type="text" placeholder="+ Nueva idea de ${label.toLowerCase()}"></form></div>`;
+  }).join('');
+}
+function copyText(s){
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=s;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}ta.remove()};
+  try{navigator.clipboard?navigator.clipboard.writeText(s).catch(fb):fb()}catch(e){fb()}
+}
+function setPasting(on){
+  document.body.classList.toggle('pasting',on);$('pastebar').classList.toggle('show',on);
+  $('grid').querySelectorAll('textarea').forEach(t=>t.readOnly=on);
+  renderIdeas();
+}
+function startPaste(it){clip={id:it.id,text:it.text};$('pasteText').textContent=it.text;setPasting(true)}
+function stopPaste(){clip=null;setPasting(false)}
+function pasteInto(t,text){
+  const v=t.value.trim();t.value=v?v+'\n'+text:text;setCell(t);
+  const c=t.closest('.cell');c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash');
+}
+const ig=$('ideasGrid');
+ig.addEventListener('input',e=>{
+  const row=e.target.closest('.idea');if(!row)return;
+  const it=state.ideas.find(i=>i.id===row.dataset.id);it.text=e.target.value;save();
+  if(clip&&clip.id===it.id){clip.text=it.text;$('pasteText').textContent=it.text}
+});
+ig.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const id=b.closest('.idea').dataset.id;const it=state.ideas.find(i=>i.id===id);
+  if(b.dataset.act==='del'){state.ideas=state.ideas.filter(i=>i.id!==id);save();if(clip&&clip.id===id)stopPaste();else renderIdeas()}
+  if(b.dataset.act==='copy'){
+    if(!it.text.trim()){toast('La idea está vacía');return}
+    copyText(it.text);startPaste(it);toast('Copiada · toca una comida para pegarla');
+  }
+});
+ig.addEventListener('submit',e=>{
+  e.preventDefault();const inp=e.target.querySelector('input');const v=inp.value.trim();if(!v)return;
+  const cat=e.target.closest('.icol').dataset.cat;state.ideas.push({id:uid(),cat,text:v});save();renderIdeas();
+  ig.querySelector(`.icol[data-cat="${cat}"] .idea-add input`).focus();
+});
+ig.addEventListener('dragstart',e=>{
+  const row=e.target.closest('.idea');if(!row)return;
+  const it=state.ideas.find(i=>i.id===row.dataset.id);if(!it.text.trim()){e.preventDefault();return}
+  dragText=it.text;e.dataTransfer.setData('text/plain',it.text);e.dataTransfer.effectAllowed='copy';
+  try{e.dataTransfer.setDragImage(row,20,20)}catch(_){}
+});
+ig.addEventListener('dragend',()=>{dragText=null;document.querySelectorAll('.cell.drop').forEach(c=>c.classList.remove('drop'))});
+const g=$('grid');
+g.addEventListener('dragover',e=>{
+  if(!dragText)return;const c=e.target.closest('.cell');if(!c)return;
+  e.preventDefault();e.dataTransfer.dropEffect='copy';
+  g.querySelectorAll('.cell.drop').forEach(x=>{if(x!==c)x.classList.remove('drop')});c.classList.add('drop');
+});
+g.addEventListener('dragleave',e=>{const c=e.target.closest('.cell');if(c&&!c.contains(e.relatedTarget))c.classList.remove('drop')});
+g.addEventListener('drop',e=>{
+  if(!dragText)return;const c=e.target.closest('.cell');if(!c)return;
+  e.preventDefault();c.classList.remove('drop');pasteInto(c.querySelector('textarea'),dragText);dragText=null;
+});
+g.addEventListener('mousedown',e=>{if(clip&&e.target.closest('.cell'))e.preventDefault()});
+g.addEventListener('click',e=>{
+  if(!clip)return;const c=e.target.closest('.cell');if(!c)return;
+  const t=c.querySelector('textarea');pasteInto(t,clip.text);t.blur();
+});
+$('pasteDone').onclick=stopPaste;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&clip)stopPaste()});
+
+function renderInv(){
+  const L=state.inventory;
+  $('invList').innerHTML=L.length?L.map(it=>`
+    <div class="item" data-id="${it.id}">
+      <input type="text" data-f="name" value="${esc(it.name)}" placeholder="Ingrediente">
+      <div style="position:relative"><input type="number" min="0" data-f="qty" value="${esc(it.qty)}"></div>
+      <select class="chip" data-f="loc" style="background:${LOCS[it.loc]||'var(--c1)'}">${opts(LOCS,it.loc)}</select>
+      <div class="actions">
+        <button class="mini" data-act="toShop" title="Agregar a la lista de compras">${ic.cart}</button>
+        <button class="mini del" data-act="del" title="Eliminar">${ic.x}</button>
+      </div>
+    </div>`).join(''):'<div class="empty">Tu despensa está vacía</div>';
+  const low=L.filter(i=>Number(i.qty)<=1&&i.name).length;
+  $('invCount').innerHTML=`${L.length} items${low?` · ${low} por acabarse<span class="low"></span>`:''}`;
+}
+function renderShop(){
+  const L=state.shopping;
+  $('shopList').innerHTML=L.length?L.map(it=>`
+    <div class="item${it.done?' done':''}" data-id="${it.id}">
+      <button class="check" data-act="toggle" aria-label="Marcar como comprado">${ic.ok}</button>
+      <input type="text" data-f="name" value="${esc(it.name)}" placeholder="Ingrediente">
+      <input type="number" min="0" data-f="qty" value="${esc(it.qty)}">
+      <select class="chip" data-f="store" style="background:${STORES[it.store]||'var(--c1)'}">${opts(STORES,it.store)}</select>
+      <div class="actions"><button class="mini del" data-act="del" title="Eliminar">${ic.x}</button></div>
+    </div>`).join(''):'<div class="empty">Nada pendiente por comprar</div>';
+  const d=L.filter(i=>i.done).length;
+  $('shopCount').textContent=L.length?`${d} de ${L.length} comprados`:'';
+  $('bar').style.width=L.length?(d/L.length*100)+'%':'0';
+}
+
+function bindList(el,key,render){
+  el.addEventListener('input',e=>{
+    const row=e.target.closest('.item');if(!row)return;
+    const it=state[key].find(i=>i.id===row.dataset.id);const f=e.target.dataset.f;if(!f)return;
+    it[f]=f==='qty'?e.target.value:e.target.value;save();
+    if(e.target.tagName==='SELECT'){e.target.style.background=(key==='inventory'?LOCS:STORES)[e.target.value]}
+    if(f==='qty'&&key==='inventory'){const L=state.inventory;const low=L.filter(i=>Number(i.qty)<=1&&i.name).length;$('invCount').innerHTML=`${L.length} items${low?` · ${low} por acabarse<span class="low"></span>`:''}`}
+  });
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const row=b.closest('.item');const id=row.dataset.id;const it=state[key].find(i=>i.id===id);
+    if(b.dataset.act==='del'){state[key]=state[key].filter(i=>i.id!==id)}
+    if(b.dataset.act==='toggle'){it.done=!it.done}
+    if(b.dataset.act==='toShop'){
+      const ex=state.shopping.find(s=>s.name.trim().toLowerCase()===it.name.trim().toLowerCase()&&!s.done);
+      if(ex){toast('Ya está en la lista');return}
+      state.shopping.push({id:uid(),name:it.name,qty:1,store:'Supermercado',done:false});renderShop();toast(`${it.name||'Item'} agregado a la lista`);
+    }
+    save();render();
+  });
+  el.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&e.target.dataset.f==='name'){e.preventDefault();(key==='inventory'?$('addInv'):$('addShop')).click()}
+  });
+}
+bindList($('invList'),'inventory',renderInv);
+bindList($('shopList'),'shopping',renderShop);
+
+function addAndFocus(key,obj,render,listEl){
+  state[key].push(obj);save();render();
+  const inputs=listEl.querySelectorAll('input[data-f="name"]');inputs[inputs.length-1].focus();
+}
+$('addInv').onclick=()=>addAndFocus('inventory',{id:uid(),name:'',qty:1,loc:'Alacena'},renderInv,$('invList'));
+$('addShop').onclick=()=>addAndFocus('shopping',{id:uid(),name:'',qty:1,store:'Supermercado',done:false},renderShop,$('shopList'));
+$('clearDone').onclick=()=>{const n=state.shopping.filter(i=>i.done).length;if(!n){toast('No hay comprados');return}state.shopping=state.shopping.filter(i=>!i.done);save();renderShop();toast(`${n} eliminados`)};
+$('toInventory').onclick=()=>{
+  const done=state.shopping.filter(i=>i.done&&i.name.trim());if(!done.length){toast('Marca primero lo que compraste');return}
+  done.forEach(s=>{
+    const ex=state.inventory.find(i=>i.name.trim().toLowerCase()===s.name.trim().toLowerCase());
+    if(ex)ex.qty=(Number(ex.qty)||0)+(Number(s.qty)||0);
+    else state.inventory.push({id:uid(),name:s.name,qty:Number(s.qty)||1,loc:'Alacena'});
+  });
+  state.shopping=state.shopping.filter(i=>!i.done);save();renderInv();renderShop();toast(`${done.length} items al inventario`);
+};
+
+/* ---------- Theme ---------- */
+const sun='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+const moon='<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>';
+const isDark=()=>state.theme?state.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+function applyTheme(){if(state.theme)document.documentElement.dataset.theme=state.theme;$('themeIcon').innerHTML=isDark()?sun:moon}
+$('themeBtn').onclick=()=>{state.theme=isDark()?'light':'dark';save();applyTheme()};
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
+
+$('printBtn').onclick=()=>window.print();
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800)}
+
+applyTheme();renderPlanner();renderIdeas();renderInv();renderShop();
+</script>
+</body>
+</html>
